@@ -37,6 +37,7 @@ class OutboxForwarder : IDisposable, IInitializable
     readonly IAsyncTask _forwarder;
     readonly IAsyncTask _cleaner;
     readonly ILog _logger;
+    bool _disposed;
 
     public OutboxForwarder(IAsyncTaskFactory asyncTaskFactory, IRebusLoggerFactory rebusLoggerFactory, IOutboxStorage outboxStorage, ITransport transport)
     {
@@ -129,10 +130,16 @@ class OutboxForwarder : IDisposable, IInitializable
 
     public void Dispose()
     {
-        _cancellationTokenSource.Cancel();
+        if (_disposed) return;
+        
+        _disposed = true;
+
+        if (!_cancellationTokenSource.IsCancellationRequested)
+            _cancellationTokenSource.Cancel();
+        
         _forwarder?.Dispose();
         _cleaner?.Dispose();
-        _cancellationTokenSource?.Dispose();
+        _cancellationTokenSource.Dispose();
     }
 
 #pragma warning restore CS4014
